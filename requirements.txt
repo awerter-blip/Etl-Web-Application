@@ -7,3 +7,4 @@ openai
 accelerate
 bitsandbytes
 psycopg2-binary
+geopy
