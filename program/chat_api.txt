@@ -1,0 +1,63 @@
+import streamlit as st
+from openai import OpenAI
+
+# -----------------------------------
+# Groq client
+# -----------------------------------
+client = OpenAI(
+    api_key=st.secrets["GROQ_API_KEY"],
+    base_url="https://api.groq.com/openai/v1"
+)
+
+# -----------------------------------
+# UI
+# -----------------------------------
+st.title("⚡ Groq AI Chatbot")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# chat history
+for msg in st.session_state.messages:
+
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+
+prompt = st.chat_input("Írj valamit...")
+
+if prompt:
+
+    # user message
+    st.session_state.messages.append({
+        "role": "user",
+        "content": prompt
+    })
+
+    with st.chat_message("user"):
+        st.write(prompt)
+
+    # assistant
+    with st.chat_message("assistant"):
+
+        with st.spinner("Gondolkodom..."):
+
+            completion = client.chat.completions.create(
+
+                model="llama-3.1-8b-instant",
+
+                messages=st.session_state.messages,
+
+                temperature=0.7,
+
+                max_tokens=300
+            )
+
+            response = completion.choices[0].message.content
+
+            st.write(response)
+
+    # save assistant response
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": response
+    })

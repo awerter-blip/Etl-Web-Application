@@ -1,0 +1,9 @@
+streamlit
+torch
+transformers
+streamlit-js-eval
+streamlit-cookies-manager
+openai
+accelerate
+bitsandbytes
+psycopg2-binary
