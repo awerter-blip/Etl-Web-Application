@@ -116,6 +116,8 @@ def load(user, username, lastlogin, cookies):
 
                 st.subheader(f"Program {index}")
                 st.subheader(place["name"])
+                if place["image"] != None:
+                        st.image(place["image"], width=150)
 
                 st.write(place["description"])
 
