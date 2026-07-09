@@ -1,11 +1,10 @@
 import json
 import os
 import requests
-import torch
 import re
 from openai import OpenAI
 from transformers import AutoTokenizer, AutoModelForMultimodalLM, AutoModelForCausalLM
-from huggingface_hub import InferenceClient
+
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
