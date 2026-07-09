@@ -57,7 +57,7 @@ def render(client, user, username, lastlogin ,cookies):
     
     with col1:
         st.markdown('<div class="custom-container">', unsafe_allow_html=True)
-        st.markdown(f"***Hello {username}.***")
+        st.markdown(f"***Hello {username["name"]}.***")
         st.markdown(f"How are you? Please tell me how can i help you?")
         st.markdown('</div>', unsafe_allow_html=True)
                 

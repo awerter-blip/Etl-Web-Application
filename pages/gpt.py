@@ -10,7 +10,7 @@ from auth import login, register, last_login, username, get_user_by_token, logou
 from messages import save_message ,load_messages , remove_messages
 
 
-def render(client, user, username, lastlogin ,cookies):
+def render(user, username, lastlogin ,cookies):
     
     # Page Title
     # Page Config
@@ -34,7 +34,8 @@ def render(client, user, username, lastlogin ,cookies):
             st.session_state["user"] = None
 
 
-
+    name = username["name"]
+    #print(name)
     # Chat GPT Header
     st.image("chatgpt.png", width=50)
     st.title("Groq Chat GPT")
@@ -58,7 +59,7 @@ def render(client, user, username, lastlogin ,cookies):
     
     with col1:
         st.markdown('<div class="custom-container">', unsafe_allow_html=True)
-        st.markdown(f"***Hello {username}.***")
+        st.markdown(f"***Hello {name}.***")
         st.markdown(f"How are you? Please tell me how can i help you?")
         st.markdown('</div>', unsafe_allow_html=True)
                 
@@ -96,6 +97,7 @@ def render(client, user, username, lastlogin ,cookies):
         with st.spinner("Wait for the deletion...", show_time=True):
             remove_messages(user, chat_type)
             st.session_state.messages_2 = []
+            st.rerun()
             
         
         # Üzenetek ismételt betöltése   

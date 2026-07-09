@@ -107,11 +107,41 @@ def username(id):
     c = conn.cursor()
 
     c.execute(
-        "SELECT name FROM users WHERE id=%s",
+        "SELECT username, name FROM users WHERE id=%s",
         (id,)
     )
 
     result = c.fetchone()
     conn.close()
 
-    return result[0] if result else None
+    #return result[0] if result else None
+    return {"username": result[0], "name": result[1]}
+    
+def modify_user(id, username, name):
+    conn = get_connection()
+    c = conn.cursor()
+
+    c.execute(
+        "update users set username = %s, name = %s WHERE id=%s",
+        (username, name,id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return id
+def change_password(id, password):
+    conn = get_connection()
+    c = conn.cursor()
+
+    try:
+        c.execute(
+            "update users set password = %s where id=%s",
+            (hash_password(password), id,)
+        )
+        conn.commit()
+        return True
+    except:
+        return False
+    finally:
+        conn.close()

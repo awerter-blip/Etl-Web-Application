@@ -2,6 +2,7 @@ import json
 import os
 import requests
 import torch
+import re
 from openai import OpenAI
 from transformers import AutoTokenizer, AutoModelForMultimodalLM, AutoModelForCausalLM
 from huggingface_hub import InferenceClient
@@ -19,7 +20,7 @@ client = OpenAI(
 MODEL_NAME = "qwen/qwen3-32b"
 
 
-def create_tips(hotel,
+def create_tips(hotel,hotel_address,
                     start_time,
                     end_time,
                     travel_mode,
@@ -50,11 +51,13 @@ def create_tips(hotel,
         ]
     }}
 
-    Destination: {hotel}
+    Start Location: {hotel_address}
+    Destination: {hotel_address}
     Preferences: {preferences}
     Days: {days}
     Places per day: {places_per_day}
     Maximum time spent per Places:{max_time_per_visit}
+    Maximum distance from Start Location: {max_km}
     Start: {start_time}
     End: {end_time}
     Language: {language}
@@ -62,32 +65,11 @@ def create_tips(hotel,
 
     # list = generate_ai_response(prompt)
     list = generate_ai_response(prompt)
+    print(list)
 
     return list
 
-def generate_description(place_name, language):
 
-    
-    
-    prompt = f"""
-    You are a travel Agency.
-    Write a travel guide description.
-
-    Place: {place_name}
-
-    Requirements:
-    - Minimum 100 words
-    - Historical background
-    - Why visit
-    - Tourist tips
-    - Valid Website Link
-
-    Language:
-    {language}
-    """
-    list = generate_ai_response_description(prompt)
-
-    return list
 
 def get_address(place_name):
     url = "https://nominatim.openstreetmap.org/search"
@@ -141,79 +123,102 @@ def get_distance(hotel_address, place_address):
 
 
 
-def generate_ai_response_description(prompt):
+def generate_ai_response_description(place, language, address):
     
     
     response = client.chat.completions.create(
-        model="qwen/qwen3-32b",
-        temperature=0.3,
-        messages=[
-            {
-                "role": "system",
-                "content": """
-                You are a travel planner API.
+    model="qwen/qwen3-32b",
+    temperature=0.6,
+    messages=[
+        {
+            "role": "system",
+            "content": f"""
+            You are a professional travel content writer.
 
-                Remove <think> at the beginning of the response.
-                """
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    )
+            Write the response in {language}.
+
+            Requirements:
+            - Length: 120–180 words.
+            - Friendly and informative tone.
+            - Introduce the destination naturally.
+            - Describe the main attractions and atmosphere.
+            - Mention the best time to visit when appropriate.
+            - Mention local food or culture if relevant.
+            - End with a sentence encouraging the reader to visit.
+            - Never use headings.
+            - Never use Markdown.
+            - Add Website link.
+            - Return only the description.
+            """
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""
+                        Destination: {place}
+                        Address: {address}
+                        
+                        """
+                    }
+                ]
+     )
 
     content = response.choices[0].message.content
     #print(content)
-
- 
-    return content
     
+    result = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL)
+    
+ 
+    return result
     
 def generate_ai_response(prompt):
     
     
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        temperature=0.3,
-        response_format={"type": "json_object"},
-        messages=[
-            {
-                "role": "system",
-                "content": """
-                You are a travel planner API.
-
-                Return ONLY valid JSON.
-                """
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    )
+    model="qwen/qwen3-32b",
+    temperature=0.2,
+    messages=[
+        {
+            "role": "system",
+            "content": f"""
+            You are a professional travel content writer.
+            Return ONLY valid JSON.
+            """
+        },
+        {
+            "role": "user",
+            "content": prompt
+        }
+     ] 
+    )     
 
     content = response.choices[0].message.content
-    #print(content)
+    result = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL)
+    result = re.sub(r"```json|```", "", result).strip()
+    print(result)
+ 
+    return result
 
-    # cleanup
-    content = (
-        content
-        .replace("```json", "")
-        .replace("```", "")
-        .strip()
-    )
 
-    #content= json.loads(content)
+def get_wiki_image(title):
+    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{title.replace(' ', '_')}"
+    headers = {
+    "User-Agent": "TravelTipsBot/1.0 (https://example.com; werter.attila@gmail.com)"
+    }
+    print(url)
+    r = requests.get(url, headers=headers)
+
+    if r.status_code != 200:
+        return None
+
+    data = r.json()
+
+    if "originalimage" in data:
+        return data["originalimage"]["source"]
+
+    if "thumbnail" in data:
+        return data["thumbnail"]["source"]
+
     
-
-    #parsed = json.loads(content)
-
-    #return TripPlan.model_validate(parsed)
-    return content
-
-
-
 
 
 
@@ -229,8 +234,8 @@ max_km,
 language):
     
 
-
-    result = create_tips(hotel,start_time,end_time,travel_mode, preferences,days, places_per_day, max_time_per_visit, max_km, language)
+    hotel_address = get_address(hotel)
+    result = create_tips(hotel,hotel_address,start_time,end_time,travel_mode, preferences,days, places_per_day, max_time_per_visit, max_km, language)
 
     trip = json.loads(result)
     #print(trip)
@@ -244,9 +249,12 @@ language):
                 place["address"] = get_address(
                     place["name"]
                 )
+                
+                place["image"] = get_wiki_image(place["name"])
+                
 
-                place["description"] = generate_description(
-                    place["name"],language
+                place["description"] = generate_ai_response_description(
+                    place["name"],language, place["address"]
                 )
                 
                 

@@ -5,7 +5,7 @@ from cookies import get_cookies
 from openai import OpenAI
 import os
 import uuid
-from auth import login, register, last_login, username, get_user_by_token, logout
+from auth import login, register, last_login, username, get_user_by_token, logout, modify_user, change_password
 #from messages import save_message, load_messages, remove_messages
 #from pages import chatgpt, gpt , route, travel
 from pages import chatgpt, gpt, route, travel
@@ -20,8 +20,8 @@ st.title("Etl App")
 # Open AI kliens
 
 
-api = st.secrets["OPENAI_API_KEY"]
-client = OpenAI(api_key=api)
+# api = st.secrets["OPENAI_API_KEY"]
+# client = OpenAI(api_key=api)
 
 # Initialize sqlite db
 #init_db()
@@ -159,35 +159,35 @@ def navbar():
             
         if st.session_state.menu_open:
             st.button("🏠 Home", use_container_width=True, on_click=lambda: set_page("home"))
-            st.button("💬 Chat", use_container_width=True, on_click=lambda: set_page("chat"))
-            st.button("🤖 GPT", use_container_width=True, on_click=lambda: set_page("gpt"))
-            st.button("🗺️ Route", use_container_width=True, on_click=lambda: set_page("route"))
+            #st.button("💬 Chat", use_container_width=True, on_click=lambda: set_page("chat"))
+            st.button("🤖 ChatGPT", use_container_width=True, on_click=lambda: set_page("gpt"))
+            #st.button("🗺️ Route", use_container_width=True, on_click=lambda: set_page("route"))
             st.button("✈️ Travel", use_container_width=True, on_click=lambda: set_page("travel"))
             st.button("🚪 Logout", use_container_width=True, on_click=do_logout)
 
     # --- DESKTOP NÉZET ---
     else:
-        col1, col2, col3, col4, col5, col6  = st.columns([1,1,1,1,1, 1])
+        col1, col2, col3, col4 = st.columns([1,1,1,1])
 
         with col1:
             st.button("🏠 Home", use_container_width=True, on_click=lambda: set_page("home"))
             
 
+        # with col2:
+            # st.button("💬 Chat", use_container_width=True, on_click=lambda: set_page("chat"))
+            
         with col2:
-            st.button("💬 Chat", use_container_width=True, on_click=lambda: set_page("chat"))
+            st.button("🤖 ChatGPT", use_container_width=True, on_click=lambda: set_page("gpt"))
             
-        with col3:
-            st.button("🤖 GPT", use_container_width=True, on_click=lambda: set_page("gpt"))
-            
-        with col4:
-            st.button("🗺️ Route", use_container_width=True, on_click=lambda: set_page("route"))
+        # with col3:
+            # st.button("🗺️ Route", use_container_width=True, on_click=lambda: set_page("route"))
             
 
-        with col5:
+        with col3:
             st.button("✈️ Travel", use_container_width=True, on_click=lambda: set_page("travel"))
             
 
-        with col6:
+        with col4:
             st.button("🚪 Logout", use_container_width=True, on_click=do_logout)
             
 
@@ -202,14 +202,43 @@ def do_logout():
     logout(st.session_state["token"])
     st.session_state.clear()
     st.rerun()
+
 # --- PAGE CONTENT ---
 def home():
     st.title("🏠 Main Page")
-    #st.write("Ez a kezdőképernyő")
+    
+    
+    # Change User Data
+    with st.form("input_form", width=500):
+        st.header("Change your Data")
+        username_input = st.text_input(label="Username", value= username["username"])
+        name_input = st.text_input(label="Name", value= username["name"])
+        
+        save_button = st.form_submit_button("Save")
+        
+    if save_button:
+        modify_user(user, username_input, name_input)
+        st.success("Saved")
+        #st.rerun()
+    
+    # Change Password    
+    with st.form("password_form", width=500):
+        st.header("Change your Password")
+        password1 = st.text_input("New password", type="password")    
+        password2 = st.text_input("New password again", type="password")    
+        
+        save_password_button = st.form_submit_button("Save Password")
+        
+    if save_password_button:
+        if password1 == password2:
+            
+            change_password(user, password1)
+            st.success("Password has been Saved.")
+        #st.rerun()
 
-def chat():
-    st.title("💬 Chat oldal")
-    st.write("Itt jön a ChatGPT rész")
+# def chat():
+    # st.title("💬 Chat oldal")
+    # st.write("Itt jön a ChatGPT rész")
 
 
 
@@ -221,16 +250,16 @@ if st.session_state.page == "home":
     home()
 
 elif st.session_state.page == "chat":
-    chatgpt.render(client, user, username, lastlogin ,cookies)
+    chatgpt.render(user, username, lastlogin ,cookies)
     
 elif st.session_state.page == "gpt":
-    gpt.render(client, user, username, lastlogin ,cookies)
+    gpt.render(user, username, lastlogin ,cookies)
 
 elif st.session_state.page == "route":
-    route.render(client, user, username, lastlogin ,cookies)
+    route.render(user, username, lastlogin ,cookies)
     
 elif st.session_state.page == "travel":
-    travel.load(client, user, username, lastlogin ,cookies)
+    travel.load(user, username, lastlogin ,cookies)
 
 
 

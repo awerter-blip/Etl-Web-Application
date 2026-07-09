@@ -8,7 +8,7 @@ from program.google_maps import create_google_maps_url
 import plans
 
 
-def load(client, user, username, lastlogin, cookies):
+def load(user, username, lastlogin, cookies):
 
     st.set_page_config(
         page_title="Travel Planner",
@@ -282,7 +282,7 @@ def load(client, user, username, lastlogin, cookies):
 
             st.session_state.submitted_form = True
 
-            with st.spinner("Planning AI route..."):
+            with st.spinner("Planning AI tips..."):
                 ## Groq REST APi Version
                 # st.session_state.trip = generate_text(
                     # hotel,
@@ -334,6 +334,9 @@ def load(client, user, username, lastlogin, cookies):
 
                     st.subheader(f"Program {index}")
                     st.subheader(place["name"])
+                    
+                    if place["image"] != None:
+                        st.image(place["image"], width=150)
 
                     st.write(place["description"])
 
