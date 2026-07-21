@@ -1,13 +1,15 @@
 import json
 import os
 import requests
-import torch
-
+import re
+from functools import lru_cache
 from openai import OpenAI
-from pydantic import BaseModel
-from typing import List
+from geopy.geocoders import Nominatim
 
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
+
+# -----------------------------
+# CONFIG
+# -----------------------------
 
 
 
@@ -17,140 +19,24 @@ client = OpenAI(
 )
 
 
+geolocator = Nominatim(
+    user_agent="travel-planner-app"
+)
 
-def generate_text(
-    hotel,
-    start_time,
-    end_time,
-    travel_mode,
-    preferences,
-    days,
-    places_per_day,
-    max_time_per_visit,
-    max_km,
-    language
-):
 
+def create_tips(hotel,hotel_address,
+                    start_time,
+                    end_time,
+                    travel_mode,
+                    preferences,
+                    days,
+                    places_per_day,
+                    max_time_per_visit,
+                    max_km,
+                    language):
     prompt = f"""
-    Create a {days}-day travel itinerary.
-
-    Hotel:
-    {hotel}
-
-    Transport:
-    {travel_mode}
-
-    Preferences:
-    {preferences}
-
-    Places per day:
-    {places_per_day}
-    
-    Start Time:
-    {start_time}
-    
-    End Time:
-    {end_time}
-    
-    Maximum km per day:
-    {max_km}
-    
-    Max Time per Visit:
-    {max_time_per_visit}
-
-    IMPORTANT:
-    
-    For each place:
-    - Places should come after each other by distance
-    - write a detailed description
-    - minimum 80 words
-    - explain why it is worth visiting
-    - include historical or cultural context
-    - mention tips for tourists
-    - Show The Start Time and End time of the Program
-    - Write is in {language}
-    
-
-    Return ONLY valid JSON.
-
-    REQUIRED JSON FORMAT:
-
-    {{
-      "trip": [
-        {{
-          "day": 1,
-          "places": [
-            {{
-              "name": "string",
-              "description": "minimum 80 words with website link",
-              "estimated_visit_minutes": int,
-              "address": "string"
-              "distance": "Distance from Hotel in km."
-              "start": "Start Time of the program."
-              "end": "Start Time of the program."
-            }}
-          ]
-        }}
-      ]
-    }}
-
-    trip MUST be a JSON array.
-    """
-
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        temperature=0.3,
-        response_format={"type": "json_object"},
-        messages=[
-            {
-                "role": "system",
-                "content": """
-                You are a travel planner API.
-
-                Return ONLY valid JSON.
-                """
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    )
-
-    content = response.choices[0].message.content
-    #print(content)
-
-    # cleanup
-    # content = (
-        # content
-        # .replace("```json", "")
-        # .replace("```", "")
-        # .strip()
-    # )
-
-    content= json.loads(content)
-    
-
-    #parsed = json.loads(content)
-
-    #return TripPlan.model_validate(parsed)
-    return content
-    
- ## Transformers library   #####
-
-MODEL_NAME = "google/flan-t5-large"
-def load_model():
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
-    return tokenizer, model
- 
-def generate_places(city, preferences, days, places_per_day):
-
-    tokenizer, model = load_model()
-    
-    
-    
-    prompt = f"""
+    You are a travel Agent.
+    Collect tips for Place visit.
     Return ONLY valid JSON.
 
     {{
@@ -159,167 +45,270 @@ def generate_places(city, preferences, days, places_per_day):
                 "day":1,
                 "places":[
                     {{
-                        "name":""
+                        "name":"",
+                        "start":"",
+                        "end":"",
+                        "estimated_visit_minutes": int
                     }}
                 ]
             }}
         ]
     }}
 
-    Destination: {city}
+    Start Location: {hotel_address}
+    Destination: {hotel_address}
     Preferences: {preferences}
     Days: {days}
     Places per day: {places_per_day}
+    Maximum time spent per Places:{max_time_per_visit}
+    Maximum distance from Start Location: {max_km}
+    Start: {start_time}
+    End: {end_time}
+    Language: {language}
     """
 
-    # messages = [
-        # {"role": "user", "content": prompt}
-    # ]
+    # list = generate_ai_response(prompt)
+    list = generate_ai_response(prompt)
+    #print(list)
 
-    # text = tokenizer.apply_chat_template(
-        # messages,
-        # tokenize=False,
-        # add_generation_prompt=True
-    # )
+    return list
 
-    inputs = tokenizer(prompt, return_tensors="pt")
 
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=300,
-        temperature=0.7
-    )
 
-    result = tokenizer.decode(
-        outputs[0][inputs.input_ids.shape[1]:],
-        skip_special_tokens=True
-    )
-    
-  
-    result = json.loads(result)
-    
-    return result
-    
-
-def get_address(place_name, city):
-
+def get_address(place_name):
     url = "https://nominatim.openstreetmap.org/search"
 
     params = {
-        "q": f"{place_name}, {city}",
-        "format": "json",
+        "q": place_name,
+        "format": "jsonv2",
         "limit": 1
     }
 
     headers = {
-        "User-Agent": "TravelPlanner"
+        "User-Agent": "MyTravelApp/1.0"
     }
 
-    response = requests.get(
-        url,
-        params=params,
-        headers=headers
+    response = requests.get(url, params=params, headers=headers)
+    response.raise_for_status()
+
+    results = response.json()
+
+    if results:
+        return results[0]["display_name"]
+    else:
+        return None
+
+     
+def get_distance(hotel_address, place_address):
+    loc1 = geolocator.geocode(hotel_address)
+    loc2 = geolocator.geocode(place_address)
+
+    if not loc1 or not loc2:
+        return None
+
+    url = (
+        f"https://router.project-osrm.org/route/v1/driving/"
+        f"{loc1.longitude},{loc1.latitude};"
+        f"{loc2.longitude},{loc2.latitude}"
+        f"?overview=false"
     )
 
+    response = requests.get(url)
     data = response.json()
+    #print(data)
 
-    if not data:
-        return ""
+    distance_m = data["routes"][0]["distance"]
 
-    return data[0]["display_name"]
-    
-def generate_description(place_name, language):
+    return round(distance_m / 1000, 2)
 
-    tokenizer, model = load_model()
-    
-    
-    prompt = f"""
-    Write a travel guide description.
 
-    Place: {place_name}
 
-    Requirements:
-    - Minimum 100 words
-    - Historical background
-    - Why visit
-    - Tourist tips
 
-    Language:
-    {language}
-    """
 
-    # messages = [
-        # {"role": "user", "content": prompt}
-    # ]
 
-    # text = tokenizer.apply_chat_template(
-        # messages,
-        # tokenize=False,
-        # add_generation_prompt=True
-    # )
 
-    inputs = tokenizer(prompt, return_tensors="pt")
+def generate_ai_response_description(place, language, address):
 
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=300,
-        temperature=0.7
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        temperature=0.5,
+        messages=[
+            {
+                "role": "system",
+                "content": f"""
+                You are an expert travel guide and tourism writer.
+
+                Write a travel description in {language}.
+
+                Rules:
+                - Return ONLY the final description text.
+                - Do NOT include your reasoning.
+                - Do NOT output <think> tags.
+                - Do NOT use Markdown.
+                - Do NOT use headings.
+                - Do NOT use bullet points.
+                - Do NOT include labels like "Description:".
+
+                Content requirements:
+                - Length: 120-180 words.
+                - Start with an engaging introduction of the place.
+                - Explain its historical or cultural importance.
+                - Describe the atmosphere and main attractions.
+                - Include useful visitor information.
+                - Mention the best visiting time if relevant.
+                - Mention local food, traditions, or interesting facts when appropriate.
+                - Include the official website URL at the end if available.
+                - Finish with an inviting sentence encouraging a visit.
+                """
+                            },
+                            {
+                                "role": "user",
+                                "content": f"""
+                Place:
+                {place}
+
+                Address:
+                {address}
+                """
+            }
+        ]
     )
 
-    return tokenizer.decode(
-        outputs[0][inputs.input_ids.shape[1]:],
-        skip_special_tokens=True
-    )
-    
-def generate_json(hotel,
-    start_time,
-    end_time,
-    travel_mode,
-    preferences,
-    days,
-    places_per_day,
-    max_time_per_visit,
-    max_km,
-    language):
-    
-    
-    
-    trip = generate_places(
-    city=hotel,
-    preferences=preferences,
-    days=days,
-    places_per_day=places_per_day
+    content = response.choices[0].message.content
+
+    # Qwen gondolkodás eltávolítása
+    content = re.sub(
+        r"<think>.*?</think>",
+        "",
+        content,
+        flags=re.DOTALL
     )
 
+    # felesleges whitespace
+    content = content.strip()
+    #print(content)
+
+    return content
     
+def generate_ai_response(prompt):
+
+
+        response = client.chat.completions.create(
+        model="openai/gpt-oss-20b",
+        temperature=0,
+        messages=[
+        {
+            "role": "system",
+            "content": """
+            You are a travel planner.
+
+            Return ONLY valid JSON.
+
+            Do not show your reasoning.
+            Do not output <think> tags.
+            Do not explain anything.
+            Do not use markdown.
+            Do not use ```.
+
+            The response must start with {
+            and end with }.
+            """
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+            ]
+            )
+
+
+        content = response.choices[0].message.content
+
+
+        # Qwen thinking blokk törlése
+        content = re.sub(
+            r"<think>.*?</think>",
+            "",
+            content,
+            flags=re.DOTALL
+        )
+
+
+        # Markdown törlés
+        content = content.replace("```json", "")
+        content = content.replace("```", "")
+
+        content = content.strip()
+
+
+        data = json.loads(content)
+
+        return data
+        
+
+
+
+def get_wiki_image(title):
+    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{title.replace(' ', '_')}"
+    headers = {
+    "User-Agent": "TravelTipsBot/1.0 (https://example.com; werter.attila@gmail.com)"
+    }
+    #print(url)
+    r = requests.get(url, headers=headers)
+
+    if r.status_code != 200:
+        return None
+
+    data = r.json()
+
+    if "originalimage" in data:
+        return data["originalimage"]["source"]
+
+    if "thumbnail" in data:
+        return data["thumbnail"]["source"]
+
     
+
+
+
+def main(hotel,
+start_time,
+end_time,
+travel_mode,
+preferences,
+days,
+places_per_day,
+max_time_per_visit,
+max_km,
+language):
     
+
+    hotel_address = get_address(hotel)
+    result = create_tips(hotel,hotel_address,start_time,end_time,travel_mode, preferences,days, places_per_day, max_time_per_visit, max_km, language)
+
+    #trip = json.loads(result)
+    trip = result
+    #print(trip)
+    hotel_address = get_address(hotel)
+    #print(hotel_address)
+
     for day in trip["trip"]:
 
-        for place in day["places"]:
+            for place in day["places"]:
 
-            place["address"] = get_address(
-                place["name"],hotel
-            )
+                place["address"] = get_address(
+                    place["name"]
+                )
+                
+                place["image"] = get_wiki_image(place["name"])
+                
 
-            place["description"] = generate_description(
-                place["name"],language
-            )
-            
-            place["estimated_visit_minutes"] = 90
-            
-            place["distance"] = max_km
-            place["start"] = start_time
-            place["end"] = end_time
-    
-    
-    
-    # trip_json = json.dumps(
-    # trip,
-    # ensure_ascii=False,
-    # indent=2
-    #)
+                place["description"] = generate_ai_response_description(
+                    place["name"],language, place["address"]
+                )
+                
+                
+                place["distance"] = get_distance(hotel_address, place["address"])
 
-    #print(trip_json)
+    #print(trip)
     return trip
-    

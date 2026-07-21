@@ -2,8 +2,7 @@ import streamlit as st
 import datetime
 import json
 
-from program.travel_planner import generate_text, generate_json
-from program.travel_planner2 import main
+from program.travel_planner import main
 from program.google_maps import create_google_maps_url
 import plans
 
@@ -123,7 +122,7 @@ def load(user, username, lastlogin, cookies):
                 else:
                     
                     if place["image"] != None:
-                            st.image(place["image"], width=150)
+                            st.image(place["image"], width=200)
 
                 st.write(place["description"])
 
@@ -344,7 +343,7 @@ def load(user, username, lastlogin, cookies):
                     st.subheader(place["name"])
                     
                     if place["image"] != None:
-                        st.image(place["image"], width=150)
+                        st.image(place["image"], width=200)
 
                     st.write(place["description"])
 
