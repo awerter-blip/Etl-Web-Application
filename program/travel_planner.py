@@ -37,6 +37,8 @@ def create_tips(hotel,hotel_address,
     prompt = f"""
     You are a travel Agent.
     Collect tips for Place visit.
+    You are at the { hotel}, {hotel_address}.
+    The User wants to visit {preferences}.
     Return ONLY valid JSON.
 
     {{
@@ -55,8 +57,8 @@ def create_tips(hotel,hotel_address,
         ]
     }}
 
-    Start Location: {hotel_address}
-    Destination: {hotel_address}
+    Start Location: { hotel}, {hotel_address}
+    Destination: { hotel}, {hotel_address}
     Preferences: {preferences}
     Days: {days}
     Places per day: {places_per_day}
@@ -66,7 +68,7 @@ def create_tips(hotel,hotel_address,
     End: {end_time}
     Language: {language}
     """
-
+    
     # list = generate_ai_response(prompt)
     list = generate_ai_response(prompt)
     #print(list)
@@ -195,12 +197,13 @@ def generate_ai_response(prompt):
 
         response = client.chat.completions.create(
         model="openai/gpt-oss-20b",
-        temperature=0,
+        #model="llama-3.1-8b-instant",
+        temperature=0.7,
+        max_tokens=300,
         messages=[
-        {
+            {
             "role": "system",
             "content": """
-            You are a travel planner.
 
             Return ONLY valid JSON.
 
@@ -209,6 +212,16 @@ def generate_ai_response(prompt):
             Do not explain anything.
             Do not use markdown.
             Do not use ```.
+            
+            IMPORTANT:
+            - Only return places that actually exist.
+            - Never invent or fabricate attractions.
+            - Do not create fictional names.
+            - Do not return generic categories instead of actual places.
+            - Consider the starting location and maximum distance.
+            - Consider the user's preferences.
+            - If you are uncertain whether a place exists, do not include it.
+            - Return only places you are confident are real.
 
             The response must start with {
             and end with }.
@@ -218,29 +231,36 @@ def generate_ai_response(prompt):
                 "role": "user",
                 "content": prompt
             }
-            ]
+            ],
+            tools=[
+                {
+                    "type": "browser_search"
+                }
+            ],
+            tool_choice="required"
             )
+        
 
 
         content = response.choices[0].message.content
-
+        #print(content)
 
         # Qwen thinking blokk törlése
-        content = re.sub(
-            r"<think>.*?</think>",
-            "",
-            content,
-            flags=re.DOTALL
-        )
+        # content = re.sub(
+            # r"<think>.*?</think>",
+            # "",
+            # content,
+            # flags=re.DOTALL
+        # )
 
 
-        # Markdown törlés
-        content = content.replace("```json", "")
-        content = content.replace("```", "")
+        #Markdown törlés
+        # content = content.replace("```json", "")
+        # content = content.replace("```", "")
 
-        content = content.strip()
+        # content = content.strip()
 
-
+        
         data = json.loads(content)
 
         return data
