@@ -1,9 +1,10 @@
-streamlit
 torch
 transformers
 streamlit-js-eval
+streamlit==1.39.0
 streamlit-cookies-manager
 openai
+groq
 accelerate
 bitsandbytes
 psycopg2-binary
