@@ -272,8 +272,8 @@ def image_generation(user, username, lastlogin, cookies):
                 st.download_button(
                     label="⬇️ Kép letöltése",
                     data=st.session_state.new_image,
-                    file_name="generated_image.png",
-                    mime="image/png"
+                    file_name="generated_image.jpg",
+                    mime="image/jpg"
                 )
                 
             # Reset Button
@@ -372,8 +372,8 @@ def image_generation(user, username, lastlogin, cookies):
             st.download_button(
                     label="⬇️ Kép letöltése",
                     data=st.session_state.edit_image,
-                    file_name="generated_image.png",
-                    mime="image/png"
+                    file_name="generated_image.jpg",
+                    mime="image/jpg"
                 )
             # Reset button
         if st.session_state.edit_image is not None:
@@ -425,8 +425,8 @@ def image_generation(user, username, lastlogin, cookies):
             st.download_button(
                     label="⬇️ Kép letöltése",
                     data=st.session_state.multiple_image,
-                    file_name="generated_image.png",
-                    mime="image/png"
+                    file_name="generated_image.jpg",
+                    mime="image/jpg"
                 )
         # Reset button
         if st.session_state.multiple_image is not None:
