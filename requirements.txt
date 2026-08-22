@@ -1,8 +1,8 @@
 torch
 transformers
 streamlit-js-eval
-streamlit==1.39.0
-streamlit-cookies-manager
+streamlit
+streamlit-cookies-manager-ext
 openai
 groq
 accelerate

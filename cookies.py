@@ -1,10 +1,13 @@
 import streamlit as st
-from streamlit_cookies_manager import EncryptedCookieManager
+import os
+from streamlit_cookies_manager_ext import EncryptedCookieManager
+
 
 def get_cookies():
+
     cookies = EncryptedCookieManager(
-        prefix="my_app",
-        password="super_secret_key"
+        prefix="my_app/",
+        password=st.secrets["COOKIES_PASSWORD"]
     )
 
     if not cookies.ready():

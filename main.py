@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from streamlit_js_eval import streamlit_js_eval
 from cookies import get_cookies
+from streamlit_cookies_manager_ext import EncryptedCookieManager
 from openai import OpenAI
 import os
 import uuid
