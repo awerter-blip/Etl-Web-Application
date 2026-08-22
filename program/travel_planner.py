@@ -1,9 +1,11 @@
+import streamlit as st
 import json
 import os
 import requests
 import re
 from functools import lru_cache
 from openai import OpenAI
+from groq import Groq
 from geopy.geocoders import Nominatim
 
 
@@ -13,10 +15,14 @@ from geopy.geocoders import Nominatim
 
 
 
-client = OpenAI(
-    api_key=os.getenv("GROQ_API_KEY"),
-    base_url="https://api.groq.com/openai/v1"
+client = Groq(
+    api_key=st.secrets["GROQ_API_KEY"]
 )
+
+# client = OpenAI(
+    # api_key=st.secrets["OPENAI_API_KEY"],
+    # base_url="https://api.openai.com/v1"
+# )
 
 
 geolocator = Nominatim(
@@ -132,7 +138,7 @@ def get_distance(hotel_address, place_address):
 def generate_ai_response_description(place, language, address):
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-20b",
         temperature=0.5,
         messages=[
             {
@@ -194,76 +200,52 @@ def generate_ai_response_description(place, language, address):
     
 def generate_ai_response(prompt):
 
-
-        response = client.chat.completions.create(
+    response = client.chat.completions.create(
         model="openai/gpt-oss-20b",
-        #model="llama-3.1-8b-instant",
-        temperature=0.7,
-        max_tokens=300,
+        temperature=0.3,
+        max_tokens=1500,
         messages=[
             {
-            "role": "system",
-            "content": """
+                "role": "system",
+                "content": """
+Return ONLY valid JSON.
 
-            Return ONLY valid JSON.
+Do not show reasoning.
+Do not output <think> tags.
+Do not explain anything.
+Do not use markdown.
+Do not use code fences.
 
-            Do not show your reasoning.
-            Do not output <think> tags.
-            Do not explain anything.
-            Do not use markdown.
-            Do not use ```.
-            
-            IMPORTANT:
-            - Only return places that actually exist.
-            - Never invent or fabricate attractions.
-            - Do not create fictional names.
-            - Do not return generic categories instead of actual places.
-            - Consider the starting location and maximum distance.
-            - Consider the user's preferences.
-            - If you are uncertain whether a place exists, do not include it.
-            - Return only places you are confident are real.
+IMPORTANT:
+- Return ONLY valid JSON.
+- Only return real places.
+- Never invent attraction names.
+- Consider the starting location.
+- Consider the maximum distance.
+- Consider the user's preferences.
 
-            The response must start with {
-            and end with }.
-            """
+The response must start with {
+and end with }.
+"""
             },
             {
                 "role": "user",
                 "content": prompt
             }
-            ],
-            tools=[
-                {
-                    "type": "browser_search"
-                }
-            ],
-            tool_choice="required"
-            )
-        
+        ]
+    )
+    print("FINISH REASON:", response.choices[0].finish_reason)
+    content = response.choices[0].message.content
 
+    print("AI RESPONSE:")
+    print(repr(content))
 
-        content = response.choices[0].message.content
-        #print(content)
-
-        # Qwen thinking blokk törlése
-        # content = re.sub(
-            # r"<think>.*?</think>",
-            # "",
-            # content,
-            # flags=re.DOTALL
-        # )
-
-
-        #Markdown törlés
-        # content = content.replace("```json", "")
-        # content = content.replace("```", "")
-
-        # content = content.strip()
-
-        
-        data = json.loads(content)
-
-        return data
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError as e:
+        print("JSON ERROR:", e)
+        print("INVALID CONTENT:", repr(content))
+        return None
         
 
 

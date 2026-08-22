@@ -8,7 +8,7 @@ import uuid
 from auth import login, register, last_login, username, get_user_by_token, logout, modify_user, change_password
 #from messages import save_message, load_messages, remove_messages
 #from pages import chatgpt, gpt , route, travel
-from pages import chatgpt, gpt, route, travel
+from pages import chatgpt, gpt, route, travel, image_generation
 
 
 # Page Config
@@ -163,11 +163,13 @@ def navbar():
             st.button("🤖 ChatGPT", use_container_width=True, on_click=lambda: set_page("gpt"))
             #st.button("🗺️ Route", use_container_width=True, on_click=lambda: set_page("route"))
             st.button("✈️ Travel", use_container_width=True, on_click=lambda: set_page("travel"))
+            st.button("🖼️ Generate Image", use_container_width=True, on_click=lambda: set_page("image_generation"))
             st.button("🚪 Logout", use_container_width=True, on_click=do_logout)
+            
 
     # --- DESKTOP NÉZET ---
     else:
-        col1, col2, col3, col4 = st.columns([1,1,1,1])
+        col1, col2, col3, col4, col5 = st.columns([1,1,1,1,1])
 
         with col1:
             st.button("🏠 Home", use_container_width=True, on_click=lambda: set_page("home"))
@@ -188,7 +190,11 @@ def navbar():
             
 
         with col4:
+            st.button("🖼️ Generate Image", use_container_width=True, on_click=lambda: set_page("image_generation"))
+        with col5:
             st.button("🚪 Logout", use_container_width=True, on_click=do_logout)
+            
+        
             
 
 
@@ -260,6 +266,9 @@ elif st.session_state.page == "route":
     
 elif st.session_state.page == "travel":
     travel.load(user, username, lastlogin ,cookies)
+    
+elif st.session_state.page == "image_generation":
+    image_generation.image_generation(user, username, lastlogin ,cookies)
 
 
 
