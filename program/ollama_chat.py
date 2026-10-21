@@ -13,8 +13,11 @@ DB_DIR = BASE_DIR / "chroma_db"
 COLLECTION_NAME = "local_documents"
 
 #CHAT_MODEL = "llama3.2:1b"
-CHAT_MODEL = "qwen3.5:2b"
-EMBED_MODEL = "nomic-embed-text"
+#CHAT_MODEL = "qwen3.5:2b"
+
+OLLAMA_HOST = st.secrets["OLLAMA_HOST"]
+OLLAMA_API_KEY = st.secrets["OLLAMA_API_KEY"]
+CHAT_MODEL = st.secrets["CHAT_MODEL"]
 
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
