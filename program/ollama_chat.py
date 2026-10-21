@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import streamlit as st
 import chromadb
 import ollama
 #from pypdf import PdfReader
@@ -18,6 +18,15 @@ COLLECTION_NAME = "local_documents"
 OLLAMA_HOST = st.secrets["OLLAMA_HOST"]
 OLLAMA_API_KEY = st.secrets["OLLAMA_API_KEY"]
 CHAT_MODEL = st.secrets["CHAT_MODEL"]
+
+# Kapcsolódás az Ollama felhős API-hoz
+client = ollama.Client(
+    host=OLLAMA_HOST,
+    headers={
+        "Authorization": f"Bearer {OLLAMA_API_KEY}"
+    },
+    timeout=120
+)
 
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
