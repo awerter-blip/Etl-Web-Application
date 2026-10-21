@@ -9,3 +9,5 @@ accelerate
 bitsandbytes
 psycopg2-binary
 geopy==2.4.1
+chromadb
+ollama
