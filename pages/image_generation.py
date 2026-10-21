@@ -250,6 +250,7 @@ def image_generation(user, username, lastlogin, cookies):
     with tab1:
 
         st.subheader("New Image")
+        st.session_state.new_image = None
         with st.form("Edit Image"):
 
             prompt = st.text_input(
@@ -265,19 +266,20 @@ def image_generation(user, username, lastlogin, cookies):
                     
                     if result is not None:
                         st.session_state.new_image = result
-            # Generált kép
-            if st.session_state.new_image is not None:
-                st.image(st.session_state.new_image, caption="Generated Image")
-                    
-                st.download_button(
-                    label="⬇️ Kép letöltése",
-                    data=st.session_state.new_image,
-                    file_name="generated_image.jpg",
-                    mime="image/jpg"
-                )
+        # Generált kép
+        if st.session_state.new_image is not None:
+            st.image(st.session_state.new_image, caption="Generated Image")
                 
-            # Reset Button
-            reset_button = st.form_submit_button("Clear Image")
+            st.download_button(
+                label="⬇️ Kép letöltése",
+                data=st.session_state.new_image,
+                file_name="generated_image.jpg",
+                mime="image/jpg"
+            )
+            
+        # Reset Button
+        if st.session_state.new_image is not None:
+            reset_button = st.button("Clear Image")
             if reset_button:
                 st.session_state.new_image = None
                 st.rerun()

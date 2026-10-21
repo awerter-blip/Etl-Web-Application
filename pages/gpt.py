@@ -6,6 +6,7 @@ import os
 import uuid
 from db import init_db
 import program.groq_chat as groq_chat
+import program.ollama_chat as ollama_chat
 from auth import login, register, last_login, username, get_user_by_token, logout
 from messages import save_message ,load_messages , remove_messages
 
@@ -125,7 +126,8 @@ def render(user, username, lastlogin ,cookies):
         with st.chat_message("assistant", avatar=robot_avatar):
             with st.spinner("Wait for the answer...", show_time=True):
                 #reply = model_handler.generate_text(prompt)
-                reply = groq_chat.generate_text(prompt, st.session_state.messages_2)
+                #reply = groq_chat.generate_text(prompt, st.session_state.messages_2)
+                reply = ollama_chat.response(prompt, st.session_state.messages_2)
         
             st.markdown(reply)
                 
