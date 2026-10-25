@@ -7,23 +7,33 @@ from functools import lru_cache
 from openai import OpenAI
 from groq import Groq
 from geopy.geocoders import Nominatim
+import ollama
 
 
 # -----------------------------
 # CONFIG
 # -----------------------------
+OLLAMA_HOST = st.secrets["OLLAMA_HOST"]
+OLLAMA_API_KEY = st.secrets["OLLAMA_API_KEY"]
+CHAT_MODEL = st.secrets["CHAT_MODEL"]
 
 
-
-client = Groq(
-    api_key=st.secrets["GROQ_API_KEY"]
-)
+#client = Groq(
+#    api_key=st.secrets["GROQ_API_KEY"]
+#)
 
 # client = OpenAI(
     # api_key=st.secrets["OPENAI_API_KEY"],
     # base_url="https://api.openai.com/v1"
 # )
 
+client = ollama.Client(
+    host=OLLAMA_HOST,
+    headers={
+        "Authorization": f"Bearer {OLLAMA_API_KEY}"
+    },
+    timeout=120
+)
 
 geolocator = Nominatim(
     user_agent="travel-planner-app"
@@ -137,9 +147,11 @@ def get_distance(hotel_address, place_address):
 
 def generate_ai_response_description(place, language, address):
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        temperature=0.5,
+    #response = client.chat.completions.create(
+    response = client.chat(
+        #model="openai/gpt-oss-20b",
+        model=CHAT_MODEL,
+        #temperature=0.5,
         messages=[
             {
                 "role": "system",
@@ -182,7 +194,8 @@ def generate_ai_response_description(place, language, address):
         ]
     )
 
-    content = response.choices[0].message.content
+    #content = response.choices[0].message.content
+    content = response["message"]["content"]
 
     # Qwen gondolkodás eltávolítása
     content = re.sub(
@@ -200,10 +213,12 @@ def generate_ai_response_description(place, language, address):
     
 def generate_ai_response(prompt):
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        temperature=0.3,
-        max_tokens=1500,
+    #response = client.chat.completions.create(
+    response = client.chat(
+        #model="openai/gpt-oss-20b",
+        model=CHAT_MODEL,
+        #temperature=0.3,
+        #max_tokens=1500,
         messages=[
             {
                 "role": "system",
@@ -234,8 +249,9 @@ and end with }.
             }
         ]
     )
-    print("FINISH REASON:", response.choices[0].finish_reason)
-    content = response.choices[0].message.content
+    #print("FINISH REASON:", response.choices[0].finish_reason)
+    #content = response.choices[0].message.content
+    content = response["message"]["content"]
 
     print("AI RESPONSE:")
     print(repr(content))
