@@ -114,6 +114,8 @@ def render(user, username, lastlogin ,cookies):
                 
 
     # Add be a prompt-ot
+    # Doksi upload
+    doc = st.file_uploader("Upload a document.")
     if prompt := st.chat_input("Please write your prompt here:"):
         # User üzenet mentése
         st.session_state.messages_2.append({"role": "user", "content": prompt})
@@ -127,7 +129,10 @@ def render(user, username, lastlogin ,cookies):
             with st.spinner("Wait for the answer...", show_time=True):
                 #reply = model_handler.generate_text(prompt)
                 #reply = groq_chat.generate_text(prompt, st.session_state.messages_2)
-                reply = ollama_chat.response(prompt, st.session_state.messages_2)
+                if doc is None:
+                    reply = ollama_chat.response(prompt, st.session_state.messages_2)
+                else:
+                    reply = ollama_chat.ask_question(prompt, st.session_state.messages_2, doc)
         
             st.markdown(reply)
                 
