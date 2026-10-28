@@ -15,4 +15,4 @@ huggingface_hub
 numpy
 sentence-transformers
 pypdf
-docx
+python-docx
