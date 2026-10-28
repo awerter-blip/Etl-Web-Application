@@ -14,3 +14,5 @@ ollama
 huggingface_hub
 numpy
 sentence-transformers
+pypdf
+docx
